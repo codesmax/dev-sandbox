@@ -15,6 +15,7 @@ RUN apt-get update && apt-get install -y \
     ca-certificates \
     libssl-dev \
     libffi-dev \
+    ripgrep \
     docker.io \
     docker-compose \
     # Python (for projects that need it at the system level, mise handles versioned installs)
@@ -34,11 +35,11 @@ RUN echo 'eval "$(mise activate bash)"' >> /etc/bash.bashrc
 
 # Install a default Node LTS via mise so claude-code/codex are available immediately
 # without needing a .mise.toml in the project
-RUN mise use --global node@lts && mise install \
-    && chmod -R a+rX /opt/mise
+RUN mise use --global node@lts && mise install
 
 # AI agent CLIs — installed after mise sets up Node
-RUN mise exec -- npm install -g @anthropic-ai/claude-code @openai/codex
+RUN mise exec -- npm install -g @anthropic-ai/claude-code @openai/codex \
+    && chmod -R a+rX /opt/mise
 
 # Any UID can run in this container — no fixed sandbox user needed
 WORKDIR /workspace
