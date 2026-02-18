@@ -1,8 +1,9 @@
-FROM debian:bookworm-slim
+FROM debian:trixie-slim
 
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Core utilities + build essentials for native npm/python packages
+# Docker CLI only (no daemon — we talk to the socket proxy)
 RUN apt-get update && apt-get install -y \
     bash \
     curl \
@@ -13,23 +14,14 @@ RUN apt-get update && apt-get install -y \
     xz-utils \
     build-essential \
     ca-certificates \
-    gnupg \
-    lsb-release \
     libssl-dev \
     libffi-dev \
+    docker.io \
+    docker-compose \
     # Python (for projects that need it at the system level, mise handles versioned installs)
     python3 \
     python3-pip \
     python3-venv \
-    && rm -rf /var/lib/apt/lists/*
-
-# Docker CLI only (no daemon — we talk to the socket proxy)
-RUN curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg \
-    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] \
-    https://download.docker.com/linux/debian $(lsb_release -cs) stable" \
-    > /etc/apt/sources.list.d/docker.list \
-    && apt-get update \
-    && apt-get install -y docker-ce-cli docker-compose-plugin \
     && rm -rf /var/lib/apt/lists/*
 
 # Non-root user (UID/GID overridden at runtime via --user, but we need the home dir)
