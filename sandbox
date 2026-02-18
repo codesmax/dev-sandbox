@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # ─── Config ────────────────────────────────────────────────────────────────────
-SANDBOX_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+SANDBOX_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SANDBOX_IMAGE="${SANDBOX_IMAGE:-dev-sandbox:latest}"
 PROXY_CONTAINER="sandbox-socket-proxy"
 PROXY_NETWORK="sandbox-proxy-net"
