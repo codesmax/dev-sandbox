@@ -7,7 +7,6 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y \
     bash \
     curl \
-    wget \
     git \
     jq \
     unzip \
