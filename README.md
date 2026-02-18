@@ -102,6 +102,12 @@ The proxy runs persistently (restarts on Colima restart automatically).
 To stop it manually:
 
 ```bash
+sandbox stop           # stop the proxy
+sandbox clean          # stop the proxy and remove its volumes
+```
+
+Or directly via Compose:
+```bash
 docker compose -f ~/.sandbox/docker-compose.yml down
 ```
 
