@@ -1,0 +1,52 @@
+services:
+  socket-proxy:
+    image: tecnativa/docker-socket-proxy:latest
+    container_name: sandbox-socket-proxy
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      # Containers: allow most operations, deny delete
+      CONTAINERS: 1
+      CONTAINERS_DELETE: 0
+
+      # Images: allow pull/build/inspect, deny delete
+      IMAGES: 1
+      IMAGES_DELETE: 0
+
+      # Networks: allow read + connect/disconnect, deny delete
+      NETWORKS: 1
+      NETWORKS_DELETE: 0
+
+      # Volumes: allow read + create (needed for compose), deny delete
+      VOLUMES: 1
+      VOLUMES_DELETE: 0
+
+      # Compose/exec/logs/build — all needed for normal dev workflow
+      EXEC: 1
+      BUILD: 1
+      EVENTS: 1
+      INFO: 1
+      PING: 1
+      VERSION: 1
+      POST: 1
+
+      # Dangerous — always off
+      AUTH: 0
+      SECRETS: 0
+      SWARM: 0
+      NODES: 0
+      SERVICES: 0
+      TASKS: 0
+      CONFIGS: 0
+      PLUGINS: 0
+      SYSTEM: 0
+      DISTRIBUTION: 0
+
+    networks:
+      - sandbox-proxy-net
+
+networks:
+  sandbox-proxy-net:
+    name: sandbox-proxy-net
+    driver: bridge

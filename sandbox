@@ -1,0 +1,121 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# ─── Config ────────────────────────────────────────────────────────────────────
+SANDBOX_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+SANDBOX_IMAGE="${SANDBOX_IMAGE:-dev-sandbox:latest}"
+PROXY_CONTAINER="sandbox-socket-proxy"
+PROXY_NETWORK="sandbox-proxy-net"
+DOCKER_HOST_IN_CONTAINER="tcp://sandbox-socket-proxy:2375"
+
+# ─── Colors ────────────────────────────────────────────────────────────────────
+RED='\033[0;31m'; YELLOW='\033[1;33m'; GREEN='\033[0;32m'; NC='\033[0m'
+
+# ─── Helpers ───────────────────────────────────────────────────────────────────
+log()  { echo -e "${GREEN}[sandbox]${NC} $*"; }
+warn() { echo -e "${YELLOW}[sandbox]${NC} $*"; }
+die()  { echo -e "${RED}[sandbox]${NC} $*" >&2; exit 1; }
+
+usage() {
+  cat <<EOF
+Usage: sandbox [options] <command> [args...]
+
+Run a command inside an isolated dev sandbox container.
+The current directory is bind-mounted as /workspace.
+
+Options:
+  -h, --help        Show this help
+  --no-proxy        Skip Docker socket proxy (no docker/compose access)
+  --build           Rebuild the sandbox image before running
+  --image IMAGE     Use a specific sandbox image (default: $SANDBOX_IMAGE)
+
+Examples:
+  sandbox claude              # Launch Claude Code
+  sandbox codex               # Launch Codex CLI
+  sandbox bash                # Drop into a shell
+  sandbox npm install         # Run any command in the sandbox
+
+Environment variables forwarded into sandbox:
+  ANTHROPIC_API_KEY, OPENAI_API_KEY
+EOF
+}
+
+# ─── Parse args ────────────────────────────────────────────────────────────────
+USE_PROXY=true
+BUILD=false
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -h|--help)    usage; exit 0 ;;
+    --no-proxy)   USE_PROXY=false; shift ;;
+    --build)      BUILD=true; shift ;;
+    --image)      SANDBOX_IMAGE="$2"; shift 2 ;;
+    --)           shift; break ;;
+    -*)           die "Unknown option: $1" ;;
+    *)            break ;;
+  esac
+done
+
+[[ $# -eq 0 ]] && { usage; exit 1; }
+
+# ─── Build image if needed ─────────────────────────────────────────────────────
+if $BUILD || ! docker image inspect "$SANDBOX_IMAGE" &>/dev/null; then
+  log "Building sandbox image: $SANDBOX_IMAGE"
+  docker build -t "$SANDBOX_IMAGE" "$SANDBOX_DIR"
+fi
+
+# ─── Ensure proxy is running ───────────────────────────────────────────────────
+if $USE_PROXY; then
+  if ! docker container inspect "$PROXY_CONTAINER" &>/dev/null 2>&1 || \
+     [[ "$(docker inspect -f '{{.State.Running}}' "$PROXY_CONTAINER" 2>/dev/null)" != "true" ]]; then
+    log "Starting Docker socket proxy..."
+    docker compose -f "$SANDBOX_DIR/docker-compose.yml" up -d
+    # Brief wait for proxy to be ready
+    sleep 1
+  fi
+fi
+
+# ─── Collect env vars to forward ───────────────────────────────────────────────
+env_flags=()
+for var in ANTHROPIC_API_KEY OPENAI_API_KEY GITHUB_TOKEN NPM_TOKEN; do
+  [[ -n "${!var:-}" ]] && env_flags+=(-e "${var}=${!var}")
+done
+
+# ─── Build docker run args ─────────────────────────────────────────────────────
+run_args=(
+  --rm
+  --interactive
+  --tty
+  -v "$(pwd):/workspace"
+  -w /workspace
+  --user "$(id -u):$(id -g)"
+  "${env_flags[@]}"
+)
+
+if $USE_PROXY; then
+  run_args+=(
+    --network "$PROXY_NETWORK"
+    -e "DOCKER_HOST=${DOCKER_HOST_IN_CONTAINER}"
+  )
+else
+  warn "Running without Docker socket proxy — docker/compose commands unavailable"
+fi
+
+# ─── Wrap command to bootstrap project env first ───────────────────────────────
+# If the project has a .mise.toml or .tool-versions, run `mise install` before
+# the agent launches so the correct runtimes are available without manual setup.
+if [[ -f "$(pwd)/.mise.toml" ]] || [[ -f "$(pwd)/.tool-versions" ]]; then
+  bootstrap='eval "$(mise activate bash)" && mise install && '
+else
+  bootstrap='eval "$(mise activate bash)" && '
+fi
+
+final_cmd="${bootstrap}$(printf '%q ' "$@")"
+
+# ─── Run ───────────────────────────────────────────────────────────────────────
+log "Entering sandbox: $(pwd)"
+log "Command: $*"
+[[ -f "$(pwd)/.mise.toml" ]] && log "Found .mise.toml — runtimes will be installed automatically"
+echo ""
+
+exec docker run "${run_args[@]}" "$SANDBOX_IMAGE" bash -c "$final_cmd"
