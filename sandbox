@@ -106,6 +106,7 @@ run_args=(
   -v "$(pwd):/workspace"
   -w /workspace
   --user "$(id -u):$(id -g)"
+  -e "HOME=/tmp"
   "${env_flags[@]+"${env_flags[@]}"}"
 )
 
