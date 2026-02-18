@@ -25,6 +25,7 @@ The current directory is bind-mounted as /workspace.
 
 Commands:
   stop              Stop the Docker socket proxy (compose down)
+  clean             Stop the proxy and remove its volumes (compose down -v)
 
 Options:
   -h, --help        Show this help
@@ -61,10 +62,16 @@ done
 
 [[ $# -eq 0 ]] && { usage; exit 1; }
 
-# ─── Stop subcommand ───────────────────────────────────────────────────────────
+# ─── Subcommands ──────────────────────────────────────────────────────────────
 if [[ "$1" == "stop" ]]; then
   log "Stopping Docker socket proxy..."
   docker compose -f "$SANDBOX_DIR/docker-compose.yml" down
+  exit 0
+fi
+
+if [[ "$1" == "clean" ]]; then
+  log "Stopping Docker socket proxy and removing volumes..."
+  docker compose -f "$SANDBOX_DIR/docker-compose.yml" down -v
   exit 0
 fi
 
