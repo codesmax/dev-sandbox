@@ -53,4 +53,6 @@ networks:
 
 volumes:
   sandbox-claude-config:
+    name: sandbox-claude-config
   sandbox-codex-config:
+    name: sandbox-codex-config
