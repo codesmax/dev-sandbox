@@ -25,11 +25,11 @@ with Docker/Compose access via a filtered socket proxy — and nothing else.
 mv sandbox ~/.sandbox
 ```
 
-### 2. Add the bin directory to your PATH
+### 2. Add to your PATH
 
 ```bash
 # in ~/.zshrc or ~/.bashrc
-export PATH="$HOME/.sandbox/bin:$PATH"
+export PATH="$HOME/.sandbox:$PATH"
 ```
 
 Then reload: `source ~/.zshrc`
@@ -41,7 +41,7 @@ sandbox --build bash
 # ctrl-d to exit after it builds
 ```
 
-### 4. Ensure Colima socket path is correct
+### 4. Ensure Docker socket path is correct
 
 The proxy mounts `/var/run/docker.sock`. On Colima this is usually symlinked
 correctly, but verify:
@@ -71,6 +71,10 @@ sandbox npm run dev         # Any arbitrary command
 sandbox --build claude      # Rebuild image first
 sandbox --no-proxy claude   # Skip Docker access entirely
 sandbox --image my-img bash # Use a custom image
+
+# Lifecycle
+sandbox stop               # Stop the socket proxy
+sandbox clean              # Stop the proxy and remove all volumes
 ```
 
 ## API keys
@@ -83,25 +87,29 @@ The launcher automatically forwards these env vars if set on the host:
 
 Set them in your shell profile as usual — no extra config needed.
 
-## Agent config persistence
+## Config persistence
 
-Claude Code and Codex config (auth tokens, settings) are stored in named Docker
-volumes (`sandbox-claude-config`, `sandbox-codex-config`) rather than bind-mounted
-from the host. This means:
+Agent config (auth tokens, settings) and any other files written to `$HOME`
+inside the sandbox are stored in a named Docker volume (`sandbox-home`) rather
+than bind-mounted from the host. This means:
 
 - Config persists across sandbox runs — authenticate once per volume
-- The agent cannot read or modify your host `~/.claude` / `~/.codex`
-- Each agent's config is fully isolated from your host environment
+- Agents cannot read or modify your host home directory
+- The sandbox home is fully isolated from your host environment
 
-To reset an agent's config (e.g. to force re-auth):
+To reset sandbox home (e.g. to force re-auth):
 ```bash
-docker volume rm sandbox-claude-config
-docker volume rm sandbox-codex-config
+sandbox clean
+```
+
+Or to remove just the home volume without stopping the proxy:
+```bash
+docker volume rm sandbox-home
 ```
 
 ## Rebuilding the image
 
-If you add tools to the Dockerfile:
+If you update the Dockerfile:
 
 ```bash
 sandbox --build bash
@@ -114,21 +122,23 @@ docker build -t dev-sandbox:latest ~/.sandbox/
 
 ## Stopping the proxy
 
-The proxy runs persistently (restarts on Colima restart automatically).
-To stop it manually:
+The proxy runs persistently in the background (restarts automatically on
+Docker/Colima restart). To manage it:
 
 ```bash
-sandbox stop           # stop the proxy
-sandbox clean          # stop the proxy and remove its volumes
-```
-
-Or directly via Compose:
-```bash
-docker compose -f ~/.sandbox/docker-compose.yml down
+sandbox stop               # stop the proxy, keep volumes
+sandbox clean              # stop the proxy and remove all volumes
 ```
 
 ## Customizing the Dockerfile
 
-The included Dockerfile has Node.js (LTS), Python 3, Docker CLI, Claude Code,
-and Codex. Add whatever your projects need — language runtimes, CLIs, etc.
+The included Dockerfile provides:
+- **Node.js LTS** (via mise) + Claude Code + Codex CLI
+- **Python 3** (system), with per-project versions managed by mise
+- **Docker CLI + Compose** (Debian-packaged)
+- **ripgrep**, jq, git, curl, and standard build tools
+
+Add whatever your projects need — language runtimes, CLIs, etc.
 The image is shared across all projects so keep it general-purpose.
+Runtime versions (Node, Python, Go, etc.) are better handled per-project
+via a `.mise.toml` file, which the sandbox picks up automatically.

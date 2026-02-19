@@ -52,7 +52,5 @@ networks:
     driver: bridge
 
 volumes:
-  sandbox-claude-config:
-    name: sandbox-claude-config
-  sandbox-codex-config:
-    name: sandbox-codex-config
+  sandbox-home:
+    name: sandbox-home
