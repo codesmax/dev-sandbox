@@ -123,6 +123,10 @@ if $USE_PROXY; then
   run_args+=(
     --network "$PROXY_NETWORK"
     -e "DOCKER_HOST=${DOCKER_HOST_IN_CONTAINER}"
+    # HOST_PWD exposes the real host path so that compose bind mounts resolve
+    # correctly — the host daemon resolves paths on the host filesystem, not
+    # inside the container, so /workspace would not exist without this.
+    -e "HOST_PWD=$(pwd)"
   )
 else
   warn "Running without Docker socket proxy — docker/compose commands unavailable"
