@@ -50,3 +50,7 @@ networks:
   sandbox-proxy-net:
     name: sandbox-proxy-net
     driver: bridge
+
+volumes:
+  sandbox-claude-config:
+  sandbox-codex-config:
