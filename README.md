@@ -90,8 +90,8 @@ Set them in your shell profile as usual — no extra config needed.
 ## Config persistence
 
 Agent config (auth tokens, settings) and any other files written to `$HOME`
-inside the sandbox are stored in a named Docker volume (`sandbox-home`) rather
-than bind-mounted from the host. This means:
+(`/home/sandbox`) inside the sandbox are stored in a named Docker volume
+(`sandbox-home`) rather than bind-mounted from the host. This means:
 
 - Config persists across sandbox runs — authenticate once per volume
 - Agents cannot read or modify your host home directory
