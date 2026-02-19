@@ -83,6 +83,22 @@ The launcher automatically forwards these env vars if set on the host:
 
 Set them in your shell profile as usual — no extra config needed.
 
+## Agent config persistence
+
+Claude Code and Codex config (auth tokens, settings) are stored in named Docker
+volumes (`sandbox-claude-config`, `sandbox-codex-config`) rather than bind-mounted
+from the host. This means:
+
+- Config persists across sandbox runs — authenticate once per volume
+- The agent cannot read or modify your host `~/.claude` / `~/.codex`
+- Each agent's config is fully isolated from your host environment
+
+To reset an agent's config (e.g. to force re-auth):
+```bash
+docker volume rm sandbox-claude-config
+docker volume rm sandbox-codex-config
+```
+
 ## Rebuilding the image
 
 If you add tools to the Dockerfile:

@@ -104,6 +104,8 @@ run_args=(
   --interactive
   --tty
   -v "$(pwd):/workspace"
+  -v "sandbox-claude-config:/tmp/.claude"
+  -v "sandbox-codex-config:/tmp/.codex"
   -w /workspace
   --user "$(id -u):$(id -g)"
   -e "HOME=/tmp"
