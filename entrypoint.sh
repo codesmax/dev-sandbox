@@ -24,7 +24,7 @@ if [[ -n "${HOME:-}" ]]; then
   # -y assumes yes to any prompts; || true so a failure doesn't abort startup.
   if ! claude plugin list 2>/dev/null | grep -q voicemode; then
     claude plugin marketplace add mbailey/voicemode || true
-    claude plugin install -y voicemode@voicemode || true
+    claude plugin install voicemode@voicemode || true
   fi
 
   # ─── VoiceMode MCP config ────────────────────────────────────────────────────
