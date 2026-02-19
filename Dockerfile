@@ -41,7 +41,13 @@ RUN mise use --global node@lts && mise install
 RUN mise exec -- npm install -g @anthropic-ai/claude-code @openai/codex \
     && chmod -R a+rX /opt/mise
 
+# Entrypoint handles runtime home-volume initialisation (skills, plugins, MCP config)
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
 # Any UID can run in this container — no fixed sandbox user needed
 WORKDIR /workspace
 
 ENV PATH="/opt/mise/shims:$PATH"
+
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

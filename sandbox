@@ -132,6 +132,12 @@ else
   warn "Running without Docker socket proxy — docker/compose commands unavailable"
 fi
 
+# host.docker.internal lets the container reach services on the host (e.g. VoiceMode).
+# Docker Desktop (Mac/Windows) provides this automatically; Linux requires it explicitly.
+if [[ "$(uname)" == "Linux" ]]; then
+  run_args+=(--add-host=host.docker.internal:host-gateway)
+fi
+
 # ─── Wrap command to bootstrap project env first ───────────────────────────────
 # If the project has a .mise.toml or .tool-versions, run `mise install` before
 # the agent launches so the correct runtimes are available without manual setup.
