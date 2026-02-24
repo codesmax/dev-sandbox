@@ -28,7 +28,7 @@ RUN apt-get update && apt-get install -y \
 # Data dir set to /opt/mise so tool installs are world-readable
 ENV MISE_DATA_DIR=/opt/mise
 ENV MISE_CONFIG_DIR=/etc/mise
-RUN curl https://mise.run | MISE_INSTALL_PATH=/usr/local/bin/mise sh
+RUN curl https://mise.run | MISE_INSTALL_PATH=/usr/local/bin/mise bash
 
 # Activate mise for all bash sessions
 RUN echo 'eval "$(mise activate bash)"' >> /etc/bash.bashrc
