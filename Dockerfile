@@ -37,8 +37,10 @@ RUN echo 'eval "$(mise activate bash)"' >> /etc/bash.bashrc
 # without needing a .mise.toml in the project
 RUN mise use --global node@lts && mise install
 
-# AI agent CLIs — installed after mise sets up Node
-RUN mise exec -- npm install -g @anthropic-ai/claude-code @openai/codex \
+# Other AI agent CLIs
+# Claude Code is installed at runtime by entrypoint.sh into the persistent home
+# volume so that auto-updates survive container restarts.
+RUN mise exec -- npm install -g @openai/codex \
     && chmod -R a+rX /opt/mise
 
 # Entrypoint handles runtime home-volume initialisation (skills, plugins, MCP config)

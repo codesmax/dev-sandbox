@@ -33,6 +33,7 @@ Options:
   --no-proxy        Skip Docker socket proxy (no docker/compose access)
   --build           Rebuild the sandbox image before running
   --image IMAGE     Use a specific sandbox image (default: $SANDBOX_IMAGE)
+  --allow-any-dir   Skip trusted-path check (override for one-off use)
 
 Examples:
   sandbox claude              # Launch Claude Code
@@ -42,22 +43,72 @@ Examples:
 
 Environment variables forwarded into sandbox:
   ANTHROPIC_API_KEY, OPENAI_API_KEY, GITHUB_TOKEN, NPM_TOKEN
+
+Trusted paths:
+  sandbox refuses to run unless the current directory is inside a configured
+  trusted path. Add allowed roots (one per line) to:
+    ~/.config/sandbox/trusted-paths
+  or set SANDBOX_TRUSTED_PATHS as a colon-separated list.
+  Use --allow-any-dir to bypass for a single invocation.
 EOF
+}
+
+# ─── Trusted-paths check ───────────────────────────────────────────────────────
+# Reads allowed roots from ~/.config/sandbox/trusted-paths (one per line,
+# # comments and blank lines ignored) and from SANDBOX_TRUSTED_PATHS (colon-
+# separated). Exits if no trusted paths are configured at all (unless the
+# caller has set ALLOW_ANY_DIR=true via --allow-any-dir).
+assert_trusted_path() {
+  [[ "${ALLOW_ANY_DIR:-false}" == "true" ]] && return 0
+
+  local trusted_paths=() cwd p config_file="$HOME/.config/sandbox/trusted-paths"
+
+  if [[ -f "$config_file" ]]; then
+    while IFS= read -r line || [[ -n "$line" ]]; do
+      [[ -z "$line" || "$line" == "#"* ]] && continue
+      trusted_paths+=("$line")
+    done < "$config_file"
+  fi
+
+  if [[ -n "${SANDBOX_TRUSTED_PATHS:-}" ]]; then
+    IFS=':' read -ra _env_paths <<< "$SANDBOX_TRUSTED_PATHS"
+    trusted_paths+=("${_env_paths[@]}")
+  fi
+
+  if [[ ${#trusted_paths[@]} -eq 0 ]]; then
+    die "No trusted paths configured.\n" \
+        "Add allowed roots (one per line) to ~/.config/sandbox/trusted-paths\n" \
+        "or set SANDBOX_TRUSTED_PATHS (colon-separated).\n" \
+        "Use --allow-any-dir to bypass for a single invocation."
+  fi
+
+  cwd="$(pwd)"
+  for p in "${trusted_paths[@]}"; do
+    p="${p%/}"   # strip trailing slash for reliable prefix matching
+    [[ "$cwd" == "$p" || "$cwd" == "$p/"* ]] && return 0
+  done
+
+  die "Refusing to run: '$(pwd)' is not inside a trusted path.\n" \
+      "Add it (or a parent directory) to ~/.config/sandbox/trusted-paths\n" \
+      "or set the SANDBOX_TRUSTED_PATHS env var (colon-separated).\n" \
+      "Use --allow-any-dir to bypass for a single invocation."
 }
 
 # ─── Parse args ────────────────────────────────────────────────────────────────
 USE_PROXY=true
 BUILD=false
+ALLOW_ANY_DIR=false
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    -h|--help)    usage; exit 0 ;;
-    --no-proxy)   USE_PROXY=false; shift ;;
-    --build)      BUILD=true; shift ;;
-    --image)      SANDBOX_IMAGE="$2"; shift 2 ;;
-    --)           shift; break ;;
-    -*)           die "Unknown option: $1" ;;
-    *)            break ;;
+    -h|--help)        usage; exit 0 ;;
+    --no-proxy)       USE_PROXY=false; shift ;;
+    --build)          BUILD=true; shift ;;
+    --image)          SANDBOX_IMAGE="$2"; shift 2 ;;
+    --allow-any-dir)  ALLOW_ANY_DIR=true; shift ;;
+    --)               shift; break ;;
+    -*)               die "Unknown option: $1" ;;
+    *)                break ;;
   esac
 done
 
@@ -75,6 +126,9 @@ if [[ "$1" == "clean" ]]; then
   docker compose -f "$SANDBOX_DIR/docker-compose.yml" down -v
   exit 0
 fi
+
+# ─── Trusted-path guard ────────────────────────────────────────────────────────
+assert_trusted_path
 
 # ─── Build image if needed ─────────────────────────────────────────────────────
 if $BUILD || ! docker image inspect "$SANDBOX_IMAGE" &>/dev/null; then
@@ -130,12 +184,6 @@ if $USE_PROXY; then
   )
 else
   warn "Running without Docker socket proxy — docker/compose commands unavailable"
-fi
-
-# host.docker.internal lets the container reach services on the host (e.g. VoiceMode).
-# Docker Desktop (Mac/Windows) provides this automatically; Linux requires it explicitly.
-if [[ "$(uname)" == "Linux" ]]; then
-  run_args+=(--add-host=host.docker.internal:host-gateway)
 fi
 
 # ─── Wrap command to bootstrap project env first ───────────────────────────────
