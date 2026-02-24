@@ -2,18 +2,16 @@
 set -euo pipefail
 
 if [[ -n "${HOME:-}" ]]; then
-  mkdir -p "$HOME/.claude"
+  export PATH="$HOME/.local/bin:$PATH"
 
   # ─── Claude Code native binary ───────────────────────────────────────────────
   # Installed into the persistent home volume so the binary survives container
   # restarts and auto-updates (which write back to the same path) actually stick.
-  # The installer puts the binary at ~/.claude/local/claude and appends a PATH
-  # export to ~/.bashrc — both of which live on the home volume.
-  if [[ ! -x "$HOME/.claude/local/claude" ]]; then
+  if [[ ! -x "$HOME/.local/bin/claude" ]]; then
     curl -fsSL https://claude.ai/install.sh | bash || true
   fi
-  # Put the home-volume binary on PATH now so subsequent claude calls below work.
-  export PATH="$HOME/.claude/local:$PATH"
+
+  [[ ! -d "$HOME/.claude" ]] && mkdir -p "$HOME/.claude"
 
   # ─── Anthropic skills ────────────────────────────────────────────────────────
   # Clone on first start, pull on subsequent starts to keep skills up to date.
