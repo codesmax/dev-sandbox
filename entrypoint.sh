@@ -2,14 +2,15 @@
 set -euo pipefail
 
 if [[ -n "${HOME:-}" ]]; then
-  export PATH="$HOME/.local/bin:$PATH"
-
   # ─── Claude Code native binary ───────────────────────────────────────────────
   # Installed into the persistent home volume so the binary survives container
   # restarts and auto-updates (which write back to the same path) actually stick.
   if [[ ! -x "$HOME/.local/bin/claude" ]]; then
     curl -fsSL https://claude.ai/install.sh | bash || true
   fi
+
+  # Update PATH to include ~/.local/bin where the claude binary is installed
+  export PATH="$HOME/.local/bin:$PATH"
 
   [[ ! -d "$HOME/.claude" ]] && mkdir -p "$HOME/.claude"
 
