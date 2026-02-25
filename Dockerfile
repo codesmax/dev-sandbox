@@ -47,6 +47,10 @@ RUN mise exec -- npm install -g @openai/codex \
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
+# Bundled Claude Code hooks (installed into the home volume by entrypoint.sh)
+COPY hooks/ /usr/local/lib/claude-hooks/
+RUN chmod +x /usr/local/lib/claude-hooks/*.sh
+
 # Any UID can run in this container — no fixed sandbox user needed
 WORKDIR /workspace
 

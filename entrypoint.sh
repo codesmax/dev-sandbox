@@ -28,6 +28,30 @@ if [[ -n "${HOME:-}" ]]; then
   if [[ ! -e "$HOME/.claude/skills" && -d "$HOME/.claude/anthropic-skills/skills" ]]; then
     ln -s "$HOME/.claude/anthropic-skills/skills" "$HOME/.claude/skills"
   fi
+
+  # ─── Claude Code hooks ───────────────────────────────────────────────────────
+  # Copy bundled hooks into the persistent home volume and register them in
+  # settings.json. Idempotent — safe to run on every container start.
+  mkdir -p "$HOME/.claude/hooks"
+  cp /usr/local/lib/claude-hooks/*.sh "$HOME/.claude/hooks/"
+  chmod +x "$HOME/.claude/hooks/"*.sh
+
+  # Merge the PostToolUse hook entry for the inplace-write fix (idempotent).
+  # Preserves the original inode after Claude's atomic writes so VSCode's file
+  # watcher keeps working across bind-mounted workspaces.
+  # See: https://github.com/anthropics/claude-code/issues/25438
+  SETTINGS="$HOME/.claude/settings.json"
+  [[ ! -f "$SETTINGS" ]] && echo '{}' > "$SETTINGS"
+  TMP_SETTINGS=$(mktemp)
+  jq '
+    .hooks.PostToolUse //= [] |
+    if any(.hooks.PostToolUse[]; .matcher == "Write|Edit") | not then
+      .hooks.PostToolUse += [{
+        "matcher": "Write|Edit",
+        "hooks": [{"type": "command", "command": "~/.claude/hooks/inplace-write.sh"}]
+      }]
+    else . end
+  ' "$SETTINGS" > "$TMP_SETTINGS" && mv "$TMP_SETTINGS" "$SETTINGS"
 fi
 
 exec "$@"
