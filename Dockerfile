@@ -11,6 +11,7 @@ RUN apt-get update && apt-get install -y \
     jq \
     unzip \
     xz-utils \
+    zstd \
     build-essential \
     ca-certificates \
     libssl-dev \
