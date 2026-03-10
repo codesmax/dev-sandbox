@@ -34,12 +34,15 @@ Options:
   --build           Rebuild the sandbox image before running
   --image IMAGE     Use a specific sandbox image (default: $SANDBOX_IMAGE)
   --allow-any-dir   Skip trusted-path check (override for one-off use)
+  -p, --port MAPPING  Forward a port (HOST:CONTAINER). Can be repeated.
 
 Examples:
   sandbox claude              # Launch Claude Code
   sandbox codex               # Launch Codex CLI
   sandbox bash                # Drop into a shell
   sandbox npm install         # Run any command in the sandbox
+  sandbox -p 8081:8081 claude # Expose Expo/Metro on port 8081
+  sandbox -p 3000:3000 -p 8081:8081 bash  # Multiple ports
 
 Environment variables forwarded into sandbox:
   ANTHROPIC_API_KEY, OPENAI_API_KEY, GITHUB_TOKEN, NPM_TOKEN
@@ -98,6 +101,7 @@ assert_trusted_path() {
 USE_PROXY=true
 BUILD=false
 ALLOW_ANY_DIR=false
+PORT_MAPPINGS=()
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -106,6 +110,7 @@ while [[ $# -gt 0 ]]; do
     --build)          BUILD=true; shift ;;
     --image)          SANDBOX_IMAGE="$2"; shift 2 ;;
     --allow-any-dir)  ALLOW_ANY_DIR=true; shift ;;
+    -p|--port)        PORT_MAPPINGS+=("$2"); shift 2 ;;
     --)               shift; break ;;
     -*)               die "Unknown option: $1" ;;
     *)                break ;;
@@ -161,6 +166,11 @@ for var in ANTHROPIC_API_KEY OPENAI_API_KEY GITHUB_TOKEN NPM_TOKEN; do
 done
 
 # ─── Build docker run args ─────────────────────────────────────────────────────
+port_flags=()
+for mapping in "${PORT_MAPPINGS[@]+"${PORT_MAPPINGS[@]}"}"; do
+  port_flags+=(-p "$mapping")
+done
+
 run_args=(
   --rm
   --interactive
@@ -169,6 +179,7 @@ run_args=(
   -v "$HOME_VOLUME:/home/sandbox"
   -w /workspace
   "${env_flags[@]+"${env_flags[@]}"}"
+  "${port_flags[@]+"${port_flags[@]}"}"
 )
 
 if $USE_PROXY; then
