@@ -17,6 +17,7 @@ RUN apt-get update && apt-get install -y \
     libssl-dev \
     libffi-dev \
     ripgrep \
+    vim \
     docker.io \
     docker-compose \
     # Python (for projects that need it at the system level, mise handles versioned installs)
