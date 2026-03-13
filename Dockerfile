@@ -66,10 +66,6 @@ ENV MISE_DATA_DIR=/home/sandbox/.local/share/mise
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
-# Bundled Claude Code hooks (installed into the home volume by entrypoint.sh)
-COPY hooks/ /usr/local/lib/claude-hooks/
-RUN chmod +x /usr/local/lib/claude-hooks/*.sh
-
 ENV PATH="/home/sandbox/.local/share/mise/shims:$PATH"
 
 USER sandbox

@@ -1,0 +1,17 @@
+{
+  "enabledPlugins": {},
+  "hooks": {},    
+  "permissions": {
+    "allow": [
+      "Read(//workspace/**)",
+      "Edit(//workspace/**)",
+      "WebSearch",
+      "Bash(cat:*)",
+      "Bash(find:*)",
+      "Bash(grep:*)",
+      "Bash(ls:*)",
+      "Bash(make:*)",
+      "Bash(yarn:*)"
+    ]
+  }
+}
