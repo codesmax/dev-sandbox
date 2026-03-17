@@ -1,4 +1,4 @@
-# dev-sandbox
+# boxout
 
 Isolated container environment for development.
 Designed for use with AI coding agents, e.g. Claude Code, Codex.
@@ -22,22 +22,22 @@ with Docker/Compose access via a filtered socket proxy — and nothing else.
 
 ```bash
 # e.g. keep it in your home dir
-mv sandbox ~/.sandbox
+mv boxout ~/.boxout
 ```
 
 ### 2. Add to your PATH
 
 ```bash
 # in ~/.zshrc or ~/.bashrc
-export PATH="$HOME/.sandbox:$PATH"
+export PATH="$HOME/.boxout:$PATH"
 ```
 
 Then reload: `source ~/.zshrc`
 
-### 3. Build the sandbox image (once)
+### 3. Build the boxout image (once)
 
 ```bash
-sandbox --build bash
+boxout --build bash
 # ctrl-d to exit after it builds
 ```
 
@@ -62,19 +62,19 @@ volumes:
 
 ```bash
 # From any project directory:
-sandbox claude              # Claude Code
-sandbox codex               # OpenAI Codex
-sandbox bash                # Interactive shell for debugging
-sandbox npm run dev         # Any arbitrary command
+boxout claude              # Claude Code
+boxout codex               # OpenAI Codex
+boxout bash                # Interactive shell for debugging
+boxout npm run dev         # Any arbitrary command
 
 # Options
-sandbox --build claude      # Rebuild image first
-sandbox --no-proxy claude   # Skip Docker access entirely
-sandbox --image my-img bash # Use a custom image
+boxout --build claude      # Rebuild image first
+boxout --no-proxy claude   # Skip Docker access entirely
+boxout --image my-img bash # Use a custom image
 
 # Lifecycle
-sandbox stop               # Stop the socket proxy
-sandbox clean              # Stop the proxy and remove all volumes
+boxout stop               # Stop the socket proxy
+boxout clean              # Stop the proxy and remove all volumes
 ```
 
 ## API keys
@@ -90,21 +90,21 @@ Set them in your shell profile as usual — no extra config needed.
 ## Config persistence
 
 Agent config (auth tokens, settings) and any other files written to `$HOME`
-(`/home/sandbox`) inside the sandbox are stored in a named Docker volume
-(`sandbox-home`) rather than bind-mounted from the host. This means:
+(`/home/boxout`) inside the container are stored in a named Docker volume
+(`boxout-home`) rather than bind-mounted from the host. This means:
 
-- Config persists across sandbox runs — authenticate once per volume
+- Config persists across boxout runs — authenticate once per volume
 - Agents cannot read or modify your host home directory
-- The sandbox home is fully isolated from your host environment
+- The container home is fully isolated from your host environment
 
-To reset sandbox home (e.g. to force re-auth):
+To reset the container home (e.g. to force re-auth):
 ```bash
-sandbox clean
+boxout clean
 ```
 
 Or to remove just the home volume without stopping the proxy:
 ```bash
-docker volume rm sandbox-home
+docker volume rm boxout-home
 ```
 
 ## Rebuilding the image
@@ -112,12 +112,12 @@ docker volume rm sandbox-home
 If you update the Dockerfile:
 
 ```bash
-sandbox --build bash
+boxout --build bash
 ```
 
 Or manually:
 ```bash
-docker build -t dev-sandbox:latest ~/.sandbox/
+docker build -t boxout:latest ~/.boxout/
 ```
 
 ## Stopping the proxy
@@ -126,8 +126,8 @@ The proxy runs persistently in the background (restarts automatically on
 Docker/Colima restart). To manage it:
 
 ```bash
-sandbox stop               # stop the proxy, keep volumes
-sandbox clean              # stop the proxy and remove all volumes
+boxout stop               # stop the proxy, keep volumes
+boxout clean              # stop the proxy and remove all volumes
 ```
 
 ## Customizing the Dockerfile
@@ -141,4 +141,4 @@ The included Dockerfile provides:
 Add whatever your projects need — language runtimes, CLIs, etc.
 The image is shared across all projects so keep it general-purpose.
 Runtime versions (Node, Python, Go, etc.) are better handled per-project
-via a `.mise.toml` file, which the sandbox picks up automatically.
+via a `.mise.toml` file, which boxout picks up automatically.

@@ -26,15 +26,15 @@ RUN apt-get update && apt-get install -y \
     python3-venv \
     && rm -rf /var/lib/apt/lists/*
 
-# Sandbox user — UID/GID 1000 matches the default on most Linux desktops.
+# Container user — UID/GID 1000 matches the default on most Linux desktops.
 # On macOS, Docker Desktop maps container UIDs to the host user transparently.
-RUN groupadd -g 1000 sandbox \
-    && useradd -m -u 1000 -g 1000 -s /bin/bash sandbox \
-    && usermod -aG docker sandbox
+RUN groupadd -g 1000 boxout \
+    && useradd -m -u 1000 -g 1000 -s /bin/bash boxout \
+    && usermod -aG docker boxout
 
 # mise binary installed system-wide.
-# Build-time tools go to /opt/mise-seed (owned by sandbox) so USER sandbox can
-# write there during the image build. The home volume is mounted at /home/sandbox
+# Build-time tools go to /opt/mise-seed (owned by boxout) so USER boxout can
+# write there during the image build. The home volume is mounted at /home/boxout
 # at runtime, which would hide anything installed there; /opt/mise-seed is outside
 # the home dir so it stays accessible. The entrypoint seeds MISE_DATA_DIR from
 # /opt/mise-seed on first run so tools are immediately available without a fresh
@@ -44,10 +44,10 @@ ENV MISE_CONFIG_DIR=/etc/mise
 RUN curl https://mise.run | MISE_INSTALL_PATH=/usr/local/bin/mise bash \
     && echo 'eval "$(mise activate bash)"' >> /etc/bash.bashrc \
     && mkdir -p /opt/mise-seed /etc/mise \
-    && chown sandbox:sandbox /opt/mise-seed /etc/mise
+    && chown boxout:boxout /opt/mise-seed /etc/mise
 
-# Install tools as sandbox so all tool files are owned correctly from the start
-USER sandbox
+# Install tools as boxout so all tool files are owned correctly from the start
+USER boxout
 RUN mise use --global node@lts && mise install
 
 # Other AI agent CLIs
@@ -60,16 +60,16 @@ USER root
 
 # At runtime, MISE_DATA_DIR lives in the home volume so tool installs persist
 # across container restarts and project-specific versions are cached.
-ENV MISE_DATA_DIR=/home/sandbox/.local/share/mise
+ENV MISE_DATA_DIR=/home/boxout/.local/share/mise
 
 # Entrypoint handles runtime home-volume initialisation (skills, plugins, MCP config)
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 COPY config/claude/settings.json /etc/claude/settings.json
 
-ENV PATH="/home/sandbox/.local/share/mise/shims:$PATH"
+ENV PATH="/home/boxout/.local/share/mise/shims:$PATH"
 
-USER sandbox
+USER boxout
 WORKDIR /workspace
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
