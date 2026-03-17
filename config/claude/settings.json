@@ -1,17 +1,31 @@
 {
-  "enabledPlugins": {},
-  "hooks": {},    
   "permissions": {
     "allow": [
       "Read(//workspace/**)",
       "Edit(//workspace/**)",
+      "Write(//workspace/**)",
       "WebSearch",
-      "Bash(cat:*)",
-      "Bash(find:*)",
-      "Bash(grep:*)",
-      "Bash(ls:*)",
+      "Bash(git:*)",
       "Bash(make:*)",
-      "Bash(yarn:*)"
+      "Bash(yarn:*)",
+      "Bash(mise:*)",
+      "Bash(jq:*)",
+      "Bash(rg:*)",
+      "Bash(diff:*)"
+    ],
+    "deny": [
+      "Bash(curl:*)",
+      "Bash(wget:*)",
+      "Bash(nc:*)",
+      "Bash(netcat:*)",
+      "Bash(socat:*)",
+      "Bash(ssh:*)",
+      "Bash(scp:*)",
+      "Bash(rsync:*)",
+      "Bash(sudo:*)",
+      "Bash(su:*)",
+      "Bash(chmod:*)",
+      "Bash(chown:*)"
     ]
   }
 }

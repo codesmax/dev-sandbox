@@ -65,6 +65,7 @@ ENV MISE_DATA_DIR=/home/sandbox/.local/share/mise
 # Entrypoint handles runtime home-volume initialisation (skills, plugins, MCP config)
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
+COPY config/claude/settings.json /etc/claude/settings.json
 
 ENV PATH="/home/sandbox/.local/share/mise/shims:$PATH"
 

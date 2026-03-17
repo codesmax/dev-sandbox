@@ -22,6 +22,23 @@ if [[ -n "${HOME:-}" ]]; then
 
   [[ ! -d "$HOME/.claude" ]] && mkdir -p "$HOME/.claude"
 
+  # ─── Claude settings: sync permissions from repo ─────────────────────────────
+  # Overwrites only the permissions block so other user settings (hooks, plugins,
+  # etc.) are preserved. Runs on every start so permissions stay in sync with the
+  # committed config without requiring a full rebuild.
+  _src="/etc/claude/settings.json"
+  _target="$HOME/.claude/settings.json"
+  if [[ -f "$_src" ]]; then
+    if [[ -f "$_target" ]]; then
+      _tmp=$(mktemp)
+      jq --argjson perms "$(jq '.permissions' "$_src")" '.permissions = $perms' "$_target" > "$_tmp" \
+        && mv "$_tmp" "$_target"
+    else
+      cp "$_src" "$_target"
+    fi
+  fi
+  unset _src _target _tmp
+
   # ─── Anthropic skills ────────────────────────────────────────────────────────
   # Clone on first start, pull on subsequent starts to keep skills up to date.
   # Symlinked to ~/.claude/skills so Claude Code picks them up automatically.
@@ -36,5 +53,6 @@ if [[ -n "${HOME:-}" ]]; then
   if [[ ! -e "$HOME/.claude/skills" && -d "$HOME/.claude/anthropic-skills/skills" ]]; then
     ln -s "$HOME/.claude/anthropic-skills/skills" "$HOME/.claude/skills"
   fi
+fi
 
 exec "$@"
